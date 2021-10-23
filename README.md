@@ -24,7 +24,7 @@ $ head -n out.json
 ```
 
 ### Download
-Download the latest release from the [releases](releases) page.
+Download the latest release from the [releases](https://github.com/knadh/csv2json/releases) page.
 
 Or, to compile with Zig (tested with v0.8.1):
 - `git clone --recursive git@github.com:knadh/csv2json.git`
