@@ -1,0 +1,6 @@
+[submodule "lib/zig-clap"]
+	path = lib/zig-clap
+	url = git@github.com:Hejsil/zig-clap.git
+[submodule "lib/zig-csv"]
+	path = lib/zig-csv
+	url = git@github.com:beho/zig-csv.git
