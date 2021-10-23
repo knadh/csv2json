@@ -1,0 +1,23 @@
+# .goreleaser.yml
+builds:
+  # The Zig executable name (specified in build.zig)
+  - binary: csv2json
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+
+    hooks:
+      # This is called for every architecture.
+      # eg: ./build.sh linux_amd64 csv2json
+      post: ./build.sh "{{ .Os }}_{{ .Arch }}" "{{ .ProjectName }}"
+
+    main: dummy.go
+
+archives:
+  - format: tar.gz
+    files:
+      - README.md
+      - LICENSE
