@@ -45,7 +45,7 @@ pub fn main() !void {
         clap.parseParam("-h, --help   Display this help and exit.") catch unreachable,
         clap.parseParam("-i, --in <STR>   Path to input CSV file.") catch unreachable,
         clap.parseParam("-a, --array <BOOL>   Convert rows to arrays instead of JSON lines.") catch unreachable,
-        clap.parseParam("-b, --buf <UINT>   Line buffer (default: 4096). Should be greater than the longest line.") catch unreachable,
+        clap.parseParam("-b, --buf <UINT32>   Line buffer (default: 4096). Should be greater than the longest line.") catch unreachable,
     };
 
     // Help / usage.
@@ -61,6 +61,14 @@ pub fn main() !void {
         std.os.exit(1);
     }
 
+    var bufSize: u32 = 4096;
+    if (args.option("--buf")) |b| {
+        bufSize = std.fmt.parseUnsigned(u32, b, 10) catch |err| {
+            std.debug.print("Invalid buffer size", .{});
+            std.os.exit(1);
+        };
+    }
+
     if (args.option("--in")) |fPath| {
         std.debug.print("Reading {s} ...\n", .{fPath});
 
@@ -68,7 +76,7 @@ pub fn main() !void {
         const start = timer.read();
 
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), 4096);
+        var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), bufSize);
         const lines = try conv.convert(fPath);
 
         printStats(start, timer.read(), lines);

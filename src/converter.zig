@@ -16,8 +16,6 @@ pub const Converter = struct {
         var s = Converter{
             .allocator = allocator,
             .out = std.io.bufferedWriter(writer),
-
-            // .csvBuf = try allocator.alloc(u8, rowBufSize),
             .csvBuf = try allocator.alloc(u8, rowBufSize),
             .hdrBuf = try allocator.alloc(u8, rowBufSize),
             .rowBuf = try allocator.alloc(u8, rowBufSize),
