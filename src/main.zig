@@ -76,6 +76,17 @@ pub fn main() !void {
         const start = timer.read();
 
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        // New Error:
+        // ./src/main.zig:79:45: error: expected type '*std.mem.Allocator', found '*const (bound fn(*std.heap.arena_allocator.ArenaAllocator) std.mem.Allocator)'
+        //         var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), bufSize);
+        //                                             ^
+        // ./src/main.zig:79:45: note: cast discards const qualifier
+        //         var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), bufSize);
+        //                                             ^
+        // /usr/lib/zig/std/start.zig:553:40: note: referenced here
+        //             const result = root.main() catch |err| {
+        //                                        ^
+        // csv2json...The following command exited with error code 1:
         var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), bufSize);
         const lines = try conv.convert(fPath);
 
