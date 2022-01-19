@@ -64,7 +64,7 @@ pub fn main() !void {
     var bufSize: u32 = 4096;
     if (args.option("--buf")) |b| {
         bufSize = std.fmt.parseUnsigned(u32, b, 10) catch |err| {
-            std.debug.print("Invalid buffer size {s}\n\n", .{@errorName(err)}); // fix the error: unused capture
+            std.debug.print("Invalid buffer size {s}\n\n", .{@errorName(err)}); // to fix the error: unused capture
             std.os.exit(1);
         };
     }
