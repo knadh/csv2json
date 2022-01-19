@@ -64,7 +64,7 @@ pub fn main() !void {
     var bufSize: u32 = 4096;
     if (args.option("--buf")) |b| {
         bufSize = std.fmt.parseUnsigned(u32, b, 10) catch |err| {
-            std.debug.print("Invalid buffer size", .{});
+            std.debug.print("Invalid buffer size {s}\n\n", .{@errorName(err)}); // to fix the error: unused capture
             std.os.exit(1);
         };
     }
@@ -76,7 +76,17 @@ pub fn main() !void {
         const start = timer.read();
 
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), bufSize);
+        // New Error:
+        // ./src/main.zig:79:45: error: expected type '*std.mem.Allocator', found '*const (bound fn(*std.heap.arena_allocator.ArenaAllocator) std.mem.Allocator)'
+        //         var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), bufSize);
+        //                                             ^
+
+        // To Fix The New Error:
+        defer arena.deinit();
+        // it looks like the API for allocators has changed slightly [Refrence issue: https://github.com/Sobeston/ziglearn/issues/131]
+        const allocator = &arena.allocator(); // allocator is a function, not a field
+        // var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), bufSize);
+        var conv = try Converter.init(allocator, std.io.getStdOut().writer(), bufSize);
         const lines = try conv.convert(fPath);
 
         printStats(start, timer.read(), lines);

@@ -164,6 +164,12 @@ pub const Converter = struct {
     }
 
     fn hasQuote(self: *Converter, val: []const u8) bool {
+        // workaround to fix the error
+        _ = self;
+        // src/converter.zig:166:17: error: unused function parameter
+        // fn hasQuote(self: *Converter, val: []const u8) bool {
+        //             ^
+        // csv2json...The following command exited with error code 1:
         for (val) |c| {
             if (c == '"') {
                 return true;
