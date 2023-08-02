@@ -8,7 +8,9 @@ pub fn printHelp(comptime params: []const clap.Param(clap.Help)) !void {
     std.debug.print("Convert CSV to JSON files.\n", .{});
     try clap.help(
         std.io.getStdErr().writer(),
+        clap.Help,
         params,
+        .{},
     );
 }
 
@@ -21,15 +23,16 @@ pub fn printStats(start: u64, end: u64, lines: u64) void {
 
     if (diff < std.time.ns_per_us) {
         val = diff;
-        unit = "nano";
+        unit = "nanoseconds";
     } else if (diff < std.time.ns_per_ms) {
         val = diff / @intToFloat(f64, std.time.ns_per_us);
-        unit = "micro";
+        unit = "microseconds";
     } else if (diff < std.time.ns_per_s) {
         val = diff / @intToFloat(f64, std.time.ns_per_ms);
-        unit = "milli";
+        unit = "milliseconds";
     } else {
         val = diff / @intToFloat(f64, std.time.ns_per_s);
+        unit = "seconds";
     }
 
     var rate = ln / (diff / @intToFloat(f64, std.time.ns_per_s));
@@ -37,46 +40,55 @@ pub fn printStats(start: u64, end: u64, lines: u64) void {
         rate = ln;
     }
 
-    std.debug.print("Processed {d} lines in {d:.2} {s}seconds ({d:.2} lines / second)\n", .{ lines, val, unit, rate });
+    std.debug.print("Processed {d} lines in {d:.2} {s} ({d:.2} lines / second)\n", .{ lines, val, unit, rate });
 }
 
 pub fn main() !void {
-    const params = comptime [_]clap.Param(clap.Help){
-        clap.parseParam("-h, --help   Display this help and exit.") catch unreachable,
-        clap.parseParam("-i, --in <STR>   Path to input CSV file.") catch unreachable,
-        clap.parseParam("-a, --array <BOOL>   Convert rows to arrays instead of JSON lines.") catch unreachable,
-        clap.parseParam("-b, --buf <UINT32>   Line buffer (default: 4096). Should be greater than the longest line.") catch unreachable,
+    const params = comptime clap.parseParamsComptime(
+        \\ -h, --help
+        \\         Display this help and exit.
+        \\ -i, --in <STR>
+        \\         Path to input CSV file.
+        \\ -b, --buf <INT>
+        \\         Line buffer (default: 4096). Should be greater than the longest line.
+    );
+
+    const parsers = comptime .{
+        .STR = clap.parsers.string,
+        .BOOL = clap.parsers.enumeration(IsArray),
+        .INT = clap.parsers.int(u32, 0),
     };
 
     // Help / usage.
-    var args = clap.parse(clap.Help, &params, .{}) catch |err| {
-        std.debug.print("invalid flags: {s}\n\n", .{@errorName(err)});
+    var args = clap.parse(clap.Help, &params, parsers, .{}) catch |err| {
+        std.debug.print("Invalid flags: {s}\n\n", .{@errorName(err)});
         try printHelp(&params);
         std.os.exit(1);
     };
     defer args.deinit();
 
-    if (args.flag("--help")) {
+    if (args.args.help) {
         try printHelp(&params);
         std.os.exit(1);
     }
 
     var bufSize: u32 = 4096;
-    if (args.option("--buf")) |b| {
-        bufSize = std.fmt.parseUnsigned(u32, b, 10) catch |err| {
-            std.debug.print("Invalid buffer size", .{});
-            std.os.exit(1);
-        };
-    }
+    if (args.args.buf) |b|
+        std.debug.print("Buffer size: {d}\n", .{b});
 
-    if (args.option("--in")) |fPath| {
+    if (args.args.in) |fPath| {
         std.debug.print("Reading {s} ...\n", .{fPath});
 
         var timer = try std.time.Timer.start();
         const start = timer.read();
 
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        var conv = try Converter.init(&arena.allocator, std.io.getStdOut().writer(), bufSize);
+        defer arena.deinit();
+
+        var allocator = arena.allocator();
+
+        var conv = try Converter.init(allocator, std.io.getStdOut().writer(), bufSize);
+
         const lines = try conv.convert(fPath);
 
         printStats(start, timer.read(), lines);

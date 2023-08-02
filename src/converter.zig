@@ -4,15 +4,17 @@ const csv = @import("csv");
 pub const Converter = struct {
     const BufferedWriter = std.io.BufferedWriter(4096, std.fs.File.Writer);
 
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     csvBuf: []u8,
     hdrBuf: []u8,
     rowBuf: []u8,
     keys: [][]const u8,
     out: BufferedWriter,
 
+    const Self = @This();
+
     // Initialize the converter.
-    pub fn init(allocator: *std.mem.Allocator, writer: anytype, rowBufSize: u32) !Converter {
+    pub fn init(allocator: std.mem.Allocator, writer: anytype, rowBufSize: u32) !Self {
         var s = Converter{
             .allocator = allocator,
             .out = std.io.bufferedWriter(writer),
@@ -25,7 +27,7 @@ pub const Converter = struct {
         return s;
     }
 
-    pub fn deinit(self: *Converter) void {
+    pub fn deinit(self: *Self) void {
         if (self.csvBuf) self.allocator.free(self.csvBuf);
         if (self.hdrBuf) self.allocator.free(self.hdrBuf);
         if (self.rowBuf) self.allocator.free(self.rowBuf);
@@ -33,10 +35,10 @@ pub const Converter = struct {
 
     // Convert a CSV file. rowBufSize should be greater than the length (bytes)
     // of the biggest row in the CSV file.
-    pub fn convert(self: *Converter, filePath: []const u8) !u64 {
+    pub fn convert(self: *Self, filePath: []const u8) !u64 {
         const file = try std.fs.cwd().openFile(filePath, .{});
         defer file.close();
-        const tk = &try csv.CsvTokenizer(std.fs.File.Reader).init(file.reader(), self.csvBuf, .{});
+        var tk = try csv.CsvTokenizer(std.fs.File.Reader).init(file.reader(), self.csvBuf, .{});
 
         var fields = std.ArrayList([]const u8).init(std.heap.page_allocator);
         var isFirst: bool = true;
@@ -87,7 +89,7 @@ pub const Converter = struct {
     }
 
     // Writes a list of "value" fields from a row as a JSON dict.
-    fn writeJSON(self: *Converter, vals: std.ArrayList([]const u8), line: u64) !void {
+    fn writeJSON(self: *Self, vals: std.ArrayList([]const u8), line: u64) !void {
         if (self.keys.len != vals.items.len) {
             std.debug.print("Invalid field count on line {d}: {d} (headers) != {d} (fields).\n", .{ line, self.keys.len, vals.items.len });
             return;
@@ -117,7 +119,7 @@ pub const Converter = struct {
         try self.out.writer().writeAll("}\n");
     }
 
-    fn writeValue(self: *Converter, val: []const u8, detectNum: bool) !void {
+    fn writeValue(self: *Self, val: []const u8, detectNum: bool) !void {
         // If the first char is a digit, then try and iterate through the rest
         // of the chars to see if it's a number.
         if (detectNum and std.ascii.isDigit(val[0])) {
@@ -149,7 +151,7 @@ pub const Converter = struct {
 
         // Iterate through the string to see if there are any quotes to escape.
         // If there aren't, doing a writeAll() is faster than than doing a .write() per character.
-        if (self.hasQuote(val)) {
+        if (hasQuote(val)) {
             for (val) |c| {
                 // Escape quotes.
                 if (c == '"') {
@@ -163,7 +165,7 @@ pub const Converter = struct {
         try self.out.writer().writeAll("\"");
     }
 
-    fn hasQuote(self: *Converter, val: []const u8) bool {
+    fn hasQuote(val: []const u8) bool {
         for (val) |c| {
             if (c == '"') {
                 return true;
