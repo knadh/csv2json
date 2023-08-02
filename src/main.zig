@@ -55,7 +55,6 @@ pub fn main() !void {
 
     const parsers = comptime .{
         .STR = clap.parsers.string,
-        .BOOL = clap.parsers.enumeration(IsArray),
         .INT = clap.parsers.int(u32, 0),
     };
 
