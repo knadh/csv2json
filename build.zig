@@ -1,25 +1,32 @@
 const std = @import("std");
 
-pub fn build(b: *std.build.Builder) void {
+pub const clap_module = std.Build.CreateModuleOptions{
+    .source_file = .{ .path = "lib/zig-clap/clap.zig" },
+};
+
+pub const csv_module = std.Build.CreateModuleOptions{
+    .source_file = .{ .path = "lib/zig-csv/src/main.zig" },
+};
+
+pub fn build(b: *std.build) void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
     // for restricting supported target set are available.
     const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
 
-    // Standard release options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    const mode = b.standardReleaseOptions();
+    const exe = b.addExecutable(.{
+        .name = "csv2json",
+        .root_source_file = .{ .path = "src/main.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
 
-    const exe = b.addExecutable("csv2json", "src/main.zig");
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
+    exe.addAnonymousModule("clap", clap_module);
+    exe.addAnonymousModule("csv", csv_module);
 
-    // Packages.
-    exe.addPackagePath("clap", "lib/zig-clap/clap.zig");
-    exe.addPackagePath("csv", "lib/zig-csv/src/main.zig");
-
-    exe.install();
+    b.installArtifact(exe);
 
     // const run_cmd = exe.run();
     // run_cmd.step.dependOn(b.getInstallStep());

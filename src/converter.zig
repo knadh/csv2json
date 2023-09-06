@@ -71,7 +71,7 @@ pub const Converter = struct {
                     // row as JSON keys.
                     if (isFirst) {
                         isFirst = false;
-                        self.keys = fields.toOwnedSlice();
+                        self.keys = try fields.toOwnedSlice();
                         continue;
                     }
 
@@ -97,7 +97,7 @@ pub const Converter = struct {
 
         try self.out.writer().writeAll("{");
 
-        for (self.keys) |key, n| {
+        for (self.keys, 0..) |key, n| {
             // Write the key.
             try self.out.writer().writeAll("\"");
             try self.out.writer().writeAll(key);
