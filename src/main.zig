@@ -15,8 +15,8 @@ pub fn printHelp(comptime params: []const clap.Param(clap.Help)) !void {
 }
 
 pub fn printStats(start: u64, end: u64, lines: u64) void {
-    const diff = @intToFloat(f64, end - start);
-    const ln = @intToFloat(f64, lines);
+    const diff = @as(f64, @floatFromInt(end - start));
+    const ln = @as(f64, @floatFromInt(lines));
 
     var val: f64 = 0;
     var unit: []const u8 = undefined;
@@ -25,17 +25,17 @@ pub fn printStats(start: u64, end: u64, lines: u64) void {
         val = diff;
         unit = "nanoseconds";
     } else if (diff < std.time.ns_per_ms) {
-        val = diff / @intToFloat(f64, std.time.ns_per_us);
+        val = diff / @as(f64, @floatFromInt(std.time.ns_per_us));
         unit = "microseconds";
     } else if (diff < std.time.ns_per_s) {
-        val = diff / @intToFloat(f64, std.time.ns_per_ms);
+        val = diff / @as(f64, @floatFromInt(std.time.ns_per_ms));
         unit = "milliseconds";
     } else {
-        val = diff / @intToFloat(f64, std.time.ns_per_s);
+        val = diff / @as(f64, @floatFromInt(std.time.ns_per_s));
         unit = "seconds";
     }
 
-    var rate = ln / (diff / @intToFloat(f64, std.time.ns_per_s));
+    var rate = ln / (diff / @as(f64, @floatFromInt(std.time.ns_per_s)));
     if (rate > ln) {
         rate = ln;
     }
@@ -66,7 +66,7 @@ pub fn main() !void {
     };
     defer args.deinit();
 
-    if (args.args.help) {
+    if (args.args.help != 0) {
         try printHelp(&params);
         std.os.exit(1);
     }
