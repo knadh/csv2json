@@ -44,6 +44,9 @@ pub fn printStats(start: u64, end: u64, lines: u64) void {
 }
 
 pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
     const params = comptime clap.parseParamsComptime(
         \\ -h, --help
         \\         Display this help and exit.
@@ -59,19 +62,21 @@ pub fn main() !void {
     };
 
     // Help / usage.
-    var args = clap.parse(clap.Help, &params, parsers, .{}) catch |err| {
+    var args = clap.parse(clap.Help, &params, parsers, .{
+        .allocator = gpa.allocator(),
+    }) catch |err| {
         std.debug.print("Invalid flags: {s}\n\n", .{@errorName(err)});
         try printHelp(&params);
-        std.os.exit(1);
+        std.process.exit(1);
     };
     defer args.deinit();
 
     if (args.args.help != 0) {
         try printHelp(&params);
-        std.os.exit(1);
+        std.process.exit(1);
     }
 
-    var bufSize: u32 = 4096;
+    const bufSize: u32 = 4096;
     if (args.args.buf) |b|
         std.debug.print("Buffer size: {d}\n", .{b});
 
@@ -84,14 +89,14 @@ pub fn main() !void {
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         defer arena.deinit();
 
-        var allocator = arena.allocator();
+        const allocator = arena.allocator();
 
         var conv = try Converter.init(allocator, std.io.getStdOut().writer(), bufSize);
 
         const lines = try conv.convert(fPath);
 
         printStats(start, timer.read(), lines);
-        std.os.exit(0);
+        std.process.exit(0);
     }
 
     // No flags.

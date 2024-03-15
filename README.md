@@ -27,7 +27,7 @@ $ head -n /tmp/1mil.json
 Download the latest release from the [releases](https://github.com/knadh/csv2json/releases) page.
 
 Or, to compile with Zig (tested with v0.11.0):
-- `git clone --recursive git@github.com:knadh/csv2json.git`
+- `git clone git@github.com:knadh/csv2json.git`
 - `cd csv2json && zig build`
 - The binary will be in `zig-out/bin`
 
