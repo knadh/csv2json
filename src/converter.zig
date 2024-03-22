@@ -15,7 +15,7 @@ pub const Converter = struct {
 
     // Initialize the converter.
     pub fn init(allocator: std.mem.Allocator, writer: anytype, rowBufSize: u32) !Self {
-        var s = Converter{
+        const s = Converter{
             .allocator = allocator,
             .out = std.io.bufferedWriter(writer),
             .csvBuf = try allocator.alloc(u8, rowBufSize),
@@ -54,11 +54,11 @@ pub const Converter = struct {
                     if (isFirst) {
                         // Copy all the fields in the first row to a separate buffer
                         // to be retained throughout the lifetime of the program.
-                        std.mem.copy(u8, self.hdrBuf[f..ln], val);
+                        std.mem.copyForwards(u8, self.hdrBuf[f..ln], val);
                         try fields.append(self.hdrBuf[f..ln]);
                     } else {
                         // Row buffer can be discarded after processing each individual row.
-                        std.mem.copy(u8, self.rowBuf[f..ln], val);
+                        std.mem.copyForwards(u8, self.rowBuf[f..ln], val);
                         try fields.append(self.rowBuf[f..ln]);
                     }
 

@@ -1,14 +1,6 @@
 const std = @import("std");
 
-pub const clap_module = std.Build.CreateModuleOptions{
-    .source_file = .{ .path = "lib/zig-clap/clap.zig" },
-};
-
-pub const csv_module = std.Build.CreateModuleOptions{
-    .source_file = .{ .path = "lib/zig-csv/src/main.zig" },
-};
-
-pub fn build(b: *std.build) void {
+pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -23,8 +15,10 @@ pub fn build(b: *std.build) void {
         .optimize = optimize,
     });
 
-    exe.addAnonymousModule("clap", clap_module);
-    exe.addAnonymousModule("csv", csv_module);
+    const dep_curl = b.dependency("clap", .{});
+    exe.root_module.addImport("clap", dep_curl.module("clap"));
+    const dep_csv = b.dependency("zig-csv", .{});
+    exe.root_module.addImport("csv", dep_csv.module("zig-csv"));
 
     b.installArtifact(exe);
 
